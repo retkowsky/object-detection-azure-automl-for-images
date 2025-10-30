@@ -299,6 +299,21 @@ This object detection workflow can be applied to numerous real-world scenarios:
 - **Security**: Surveillance, intrusion detection, perimeter monitoring
 - **Infrastructure**: Crack detection, damage assessment, maintenance inspection
 
+## Screenshots
+<img src="img/dataset1.jpg">
+<img src="img/dataset2.jpg">
+<img src="img/gpu.jpg">
+<img src="img/job1.jpg">
+<img src="img/job2.jpg">
+<img src="img/job3.jpg">
+<img src="img/job4.jpg">
+<img src="img/model1.jpg">
+<img src="img/model2.jpg">
+<img src="img/endpoint1.jpg">
+<img src="img/endpoint2.jpg">
+<img src="img/gradio1.jpg">
+<img src="img/gradio2.jpg">
+
 ## 📧 Contact
 
 **Serge Retkowsky**
