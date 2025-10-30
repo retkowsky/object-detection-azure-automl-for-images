@@ -295,20 +295,6 @@ This object detection workflow can be applied to numerous real-world scenarios:
 - **Security**: Surveillance, intrusion detection, perimeter monitoring
 - **Infrastructure**: Crack detection, damage assessment, maintenance inspection
 
-## 📝 Data Format
-
-Object detection data should be in JSONL format with the following structure:
-
-```json
-{
-  "image_url": "path/to/image.jpg",
-  "image_details": {"format": "jpg", "width": 640, "height": 480},
-  "label": [
-    {"label": "object_class", "topX": 100, "topY": 100, "bottomX": 200, "bottomY": 200}
-  ]
-}
-```
-
 ## 📧 Contact
 
 **Serge Retkowsky**
