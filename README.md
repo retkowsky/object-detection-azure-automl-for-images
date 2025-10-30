@@ -267,16 +267,6 @@ This repository covers both cloud and edge deployment scenarios:
 - **Privacy**: Keep sensitive data on-device
 - **Scalability**: Distribute processing across many edge devices
 
-## ⚠️ Important Notes
-
-- All notebooks in this repository are created for **demonstration and educational purposes**
-- These notebooks are **not designed for production usage** without proper testing, validation, and security reviews
-- **Execute notebooks sequentially** (1 → 2 → 3 → 4) for the complete workflow
-- AutoML for Images capabilities may have evolved - always refer to the latest Azure documentation
-- Ensure you have appropriate compute resources allocated in your Azure ML workspace
-- Edge deployment (Notebook 4) requires ONNX Runtime to be installed on target devices
-- Monitor costs associated with compute, storage, and inference endpoints
-
 ## 💡 Use Cases and Applications
 
 This object detection workflow can be applied to numerous real-world scenarios:
