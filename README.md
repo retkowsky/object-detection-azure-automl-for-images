@@ -1,5 +1,8 @@
 # Object Detection with Azure AutoML for Images
 
+## Swimming pools object detection use-case
+<img src="img/img.jpg">
+
 This repository contains a comprehensive, end-to-end tutorial with Python notebooks demonstrating object detection using Azure AutoML for Images. The notebooks guide you through the complete workflow from data preparation to model deployment and inference, including both cloud and edge scenarios.
 
 ## 📋 Overview
