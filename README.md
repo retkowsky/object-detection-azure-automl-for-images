@@ -302,10 +302,9 @@ This object detection workflow can be applied to numerous real-world scenarios:
 ## 📧 Contact
 
 **Serge Retkowsky**
-Email: serge.retkowsky@microsoft.com
-LinkedIn: https://www.linkedin.com/in/serger/
-Updated: 30th of october, 2025
-
+- Email: serge.retkowsky@microsoft.com
+- LinkedIn: https://www.linkedin.com/in/serger/
+- Updated: 30th of october, 2025
 
 ## 📄 License
 
