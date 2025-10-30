@@ -3,13 +3,6 @@
 This repository contains a comprehensive, end-to-end tutorial with Python notebooks demonstrating object detection using Azure AutoML for Images. The notebooks guide you through the complete workflow from data preparation to model deployment and inference, including both cloud and edge scenarios.
 
 ## 📋 Overview
-
-AutoML for Images is an Azure Machine Learning feature that empowers data scientists to rapidly build machine learning models for computer vision tasks. This repository provides a **complete, step-by-step tutorial** for building object detection models, covering the entire machine learning lifecycle.
-
-# Azure AutoML for Images - Image Classification
-This repository contains Python notebooks demonstrating image classification using Azure AutoML for Images. These notebooks provide practical examples of building computer vision models for various classification tasks.
-
-## 📋 Overview
 Azure AutoML for Images is a feature within Azure Machine Learning that allows you to easily and rapidly build vision models from image data. This repository focuses on Image Classification scenarios, showcasing how to leverage AutoML to generate high-quality models with minimal code.
 
 <img src="https://github.com/retkowsky/image-classification-azure-automl-for-images/blob/main/img/automl.png?raw=true">
