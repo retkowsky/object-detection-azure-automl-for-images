@@ -246,15 +246,6 @@ image_object_detection_job.set_limits(
 )
 ```
 
-## 📈 Evaluation Metrics
-
-Object detection models are evaluated using metrics such as:
-
-- **mAP (mean Average Precision)**: Primary metric for object detection
-- **Precision**: Proportion of correct positive predictions
-- **Recall**: Proportion of actual positives correctly identified
-- **IoU (Intersection over Union)**: Overlap between predicted and ground truth boxes
-
 ## 🚀 Deployment
 
 This repository covers both cloud and edge deployment scenarios:
