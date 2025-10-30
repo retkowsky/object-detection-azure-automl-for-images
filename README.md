@@ -300,17 +300,29 @@ This object detection workflow can be applied to numerous real-world scenarios:
 - **Infrastructure**: Crack detection, damage assessment, maintenance inspection
 
 ## Screenshots
+
+### Images
 <img src="img/dataset1.jpg">
 <img src="img/dataset2.jpg">
+
+### GPU compute cluster
 <img src="img/gpu.jpg">
+
+### Model training
 <img src="img/job1.jpg">
 <img src="img/job2.jpg">
 <img src="img/job3.jpg">
 <img src="img/job4.jpg">
+
+### Best model
 <img src="img/model1.jpg">
 <img src="img/model2.jpg">
+
+### Deployed model
 <img src="img/endpoint1.jpg">
 <img src="img/endpoint2.jpg">
+
+### Webapp
 <img src="img/gradio1.jpg">
 <img src="img/gradio2.jpg">
 
