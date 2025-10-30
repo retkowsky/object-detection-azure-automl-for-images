@@ -310,12 +310,6 @@ This object detection workflow can be applied to numerous real-world scenarios:
 
 This project is provided as-is for educational and demonstration purposes.
 
-## 🔗 Related Repositories
-
-- [AutoMLforImages](https://github.com/retkowsky/AutoMLforImages) - General AutoML for Images examples
-- [Azure_AutoMLforImages_Learn](https://github.com/retkowsky/Azure_AutoMLforImages_Learn) - Learning resources for AutoML for Images
-- [azure_automl_for_images_python_sdk_v2](https://github.com/retkowsky/azure_automl_for_images_python_sdk_v2) - Python SDK v2 templates
-
 ---
 
 **Note**: This repository demonstrates Azure AutoML for Images capabilities. For the latest features and updates, please refer to the [official Azure Machine Learning documentation](https://docs.microsoft.com/en-us/azure/machine-learning/).
