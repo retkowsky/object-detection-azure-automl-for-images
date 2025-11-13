@@ -1,4 +1,7 @@
 # Object Detection with Azure AutoML for Images
+[![Azure ML](https://img.shields.io/badge/Azure-Machine%20Learning-blue)](https://azure.microsoft.com/services/machine-learning/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-yellow)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ## Swimming pools object detection use-case
 <img src="img/img.jpg">
