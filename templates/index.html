@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONNX Object Detection — Edge Inference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Design tokens ─────────────────────────────────────────────────── */
+    :root {
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'Barlow', sans-serif;
+      --display:  'Barlow Condensed', sans-serif;
+      --radius:   8px;
+      --radius-lg:14px;
+      --transition:0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── THEME: Azure (default dark blue) ── */
+    [data-theme="azure"], :root {
+      --bg:         #0a0d12;
+      --surface:    #111620;
+      --surface-2:  #171d2b;
+      --border:     #1e2740;
+      --border-hi:  #2a3558;
+      --accent:     #0078d4;
+      --accent-hi:  #1a9bff;
+      --accent-dim: #0a3a6b;
+      --lime:       #00e676;
+      --lime-dim:   #002d18;
+      --amber:      #ffb300;
+      --amber-dim:  #332400;
+      --red:        #f44336;
+      --red-dim:    #2d0a08;
+      --text:       #d4ddf5;
+      --text-muted: #5a6b8a;
+      --text-dim:   #3a4a6a;
+      --grid-color: #1e2740;
+      --glow:       rgba(0,120,212,0.08);
+    }
+
+    /* ── THEME: Matrix (terminal green) ── */
+    [data-theme="matrix"] {
+      --bg:         #020b02;
+      --surface:    #051005;
+      --surface-2:  #091609;
+      --border:     #0d2b0d;
+      --border-hi:  #154515;
+      --accent:     #00c800;
+      --accent-hi:  #39ff39;
+      --accent-dim: #002800;
+      --lime:       #00ff9f;
+      --lime-dim:   #002918;
+      --amber:      #b8ff00;
+      --amber-dim:  #1a2400;
+      --red:        #ff3c3c;
+      --red-dim:    #2d0808;
+      --text:       #b8ffb8;
+      --text-muted: #3a6b3a;
+      --text-dim:   #1a3a1a;
+      --grid-color: #0d2b0d;
+      --glow:       rgba(0,200,0,0.07);
+    }
+
+    /* ── THEME: Violet (deep purple) ── */
+    [data-theme="violet"] {
+      --bg:         #0b0812;
+      --surface:    #130f1e;
+      --surface-2:  #1a1428;
+      --border:     #241b3a;
+      --border-hi:  #332852;
+      --accent:     #7c3aed;
+      --accent-hi:  #a78bfa;
+      --accent-dim: #2e1065;
+      --lime:       #34d399;
+      --lime-dim:   #052e20;
+      --amber:      #fbbf24;
+      --amber-dim:  #2d1d04;
+      --red:        #f87171;
+      --red-dim:    #2d0a0a;
+      --text:       #e2d9f3;
+      --text-muted: #6b5a8a;
+      --text-dim:   #3a2a5a;
+      --grid-color: #1e1530;
+      --glow:       rgba(124,58,237,0.08);
+    }
+
+    /* ── THEME: Amber (warm dark) ── */
+    [data-theme="amber"] {
+      --bg:         #0f0a02;
+      --surface:    #1a1205;
+      --surface-2:  #231807;
+      --border:     #332200;
+      --border-hi:  #4d3300;
+      --accent:     #f59e0b;
+      --accent-hi:  #fcd34d;
+      --accent-dim: #451a00;
+      --lime:       #86efac;
+      --lime-dim:   #052e16;
+      --amber:      #fb923c;
+      --amber-dim:  #2d1000;
+      --red:        #f87171;
+      --red-dim:    #2d0a0a;
+      --text:       #fef3c7;
+      --text-muted: #78634a;
+      --text-dim:   #3d2f1a;
+      --grid-color: #2a1a00;
+      --glow:       rgba(245,158,11,0.07);
+    }
+
+    /* ── THEME: Light (clean pro) ── */
+    [data-theme="light"] {
+      --bg:         #f0f2f7;
+      --surface:    #ffffff;
+      --surface-2:  #f8faff;
+      --border:     #d8dff0;
+      --border-hi:  #b8c5e0;
+      --accent:     #0055b3;
+      --accent-hi:  #0068d9;
+      --accent-dim: #deeaff;
+      --lime:       #00875a;
+      --lime-dim:   #e3fcef;
+      --amber:      #b45309;
+      --amber-dim:  #fffbeb;
+      --red:        #dc2626;
+      --red-dim:    #fef2f2;
+      --text:       #1a2540;
+      --text-muted: #6b7a9a;
+      --text-dim:   #b0bcd8;
+      --grid-color: #d0d8ee;
+      --glow:       rgba(0,85,179,0.05);
+    }
+
+    /* Remap old --azure-* vars to --accent-* for compat */
+    :root, [data-theme] {
+      --azure:     var(--accent);
+      --azure-hi:  var(--accent-hi);
+      --azure-dim: var(--accent-dim);
+    }
+
+    /* ─── Reset & base ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient glow */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(ellipse at center, var(--glow), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────────────── */
+    .app-wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Header ────────────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 16px; }
+
+    .logo-mark {
+      width: 42px; height: 42px;
+      background: var(--azure);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(0,120,212,0.4);
+    }
+
+    .header-title {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      line-height: 1.15;
+      color: #fff;
+    }
+
+    .header-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .header-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 99px;
+      border: 1px solid var(--border-hi);
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--surface);
+    }
+
+    /* ─── Main grid ─────────────────────────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+      padding-bottom: 60px;
+    }
+
+    /* ─── Panel / card ──────────────────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .panel-icon {
+      width: 22px; height: 22px;
+      fill: var(--azure);
+    }
+
+    .panel-title {
+      font-family: var(--display);
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .panel-body { padding: 20px; }
+
+    /* ─── Section label ─────────────────────────────────────────────────── */
+    .field-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .field-label span {
+      display: inline-block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--azure);
+    }
+
+    .field-group { margin-bottom: 20px; }
+    .field-group:last-child { margin-bottom: 0; }
+
+    /* ─── File drop zone ────────────────────────────────────────────────── */
+    .drop-zone {
+      position: relative;
+      border: 1.5px dashed var(--border-hi);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      background: rgba(255,255,255,0.01);
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--azure);
+      background: rgba(0,120,212,0.05);
+    }
+
+    .drop-zone.has-file {
+      border-color: var(--lime);
+      border-style: solid;
+      background: var(--lime-dim);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-inner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .drop-icon {
+      width: 34px; height: 34px;
+      background: var(--surface-2);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .drop-zone.has-file .drop-icon { background: var(--lime-dim); }
+
+    .drop-text { flex: 1; min-width: 0; }
+    .drop-text-main {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .drop-text-hint {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .drop-zone.has-file .drop-text-main { color: var(--lime); }
+
+    /* ─── Image drop zone (larger) ──────────────────────────────────────── */
+    .drop-zone-image {
+      border: 1.5px dashed var(--border-hi);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      background: rgba(255,255,255,0.01);
+      position: relative;
+      overflow: hidden;
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-zone-image:hover { border-color: var(--azure); background: rgba(0,120,212,0.04); }
+    .drop-zone-image.has-file { border-color: var(--lime); border-style: solid; }
+
+    .drop-zone-image input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-image-preview {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: none;
+      border-radius: calc(var(--radius) - 1px);
+      max-height: 200px;
+    }
+    .drop-image-preview.visible { display: block; }
+
+    .drop-image-placeholder {
+      text-align: center;
+      padding: 28px 16px;
+      pointer-events: none;
+    }
+    .drop-image-placeholder.hidden { display: none; }
+    .drop-image-placeholder .big-icon { font-size: 28px; margin-bottom: 8px; }
+    .drop-image-placeholder .hint {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .drop-image-placeholder .formats {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ─── Sliders ───────────────────────────────────────────────────────── */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .slider-row:last-child { margin-bottom: 0; }
+
+    .slider-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-hi);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--azure);
+      box-shadow: 0 0 10px rgba(0,120,212,0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    .slider-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--azure-hi);
+      width: 38px;
+      text-align: right;
+    }
+
+    /* ─── Run button ────────────────────────────────────────────────────── */
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background: var(--azure);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background var(--transition), transform 0.1s, box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .btn-run:hover:not(:disabled) {
+      background: var(--azure-hi);
+      box-shadow: 0 0 30px rgba(0,120,212,0.4);
+    }
+    .btn-run:active:not(:disabled) { transform: scale(0.985); }
+    .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-run .btn-shimmer {
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 1.6s infinite;
+    }
+
+    @keyframes shimmer { to { left: 140%; } }
+    .btn-run:not(.loading) .btn-shimmer { display: none; }
+
+    .btn-run-text { position: relative; z-index: 1; }
+
+    /* ─── Results panel ─────────────────────────────────────────────────── */
+    .results-panel { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ─── Image comparison ──────────────────────────────────────────────── */
+    .image-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .image-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .image-tab {
+      flex: 1;
+      padding: 12px 16px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: color var(--transition), background var(--transition);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .image-tab.active {
+      color: var(--azure-hi);
+      border-bottom-color: var(--azure);
+      background: rgba(0,120,212,0.05);
+    }
+
+    .image-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.02); }
+
+    .image-display-area {
+      padding: 20px;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-img {
+      max-width: 100%;
+      max-height: 600px;
+      border-radius: var(--radius);
+      object-fit: contain;
+      display: none;
+    }
+    .result-img.active { display: block; }
+
+    /* ─── Placeholder state ─────────────────────────────────────────────── */
+    .result-placeholder {
+      text-align: center;
+      color: var(--text-dim);
+    }
+
+    .result-placeholder .ph-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+    .result-placeholder p {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── Processing overlay ────────────────────────────────────────────── */
+    .processing-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .processing-overlay.visible { display: flex; }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border-hi);
+      border-top-color: var(--azure);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .processing-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── Metrics bar ───────────────────────────────────────────────────── */
+    .metrics-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-item { display: flex; flex-direction: column; gap: 4px; }
+
+    .metric-val {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--azure-hi);
+      line-height: 1;
+    }
+
+    .metric-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .metric-item.green .metric-val { color: var(--lime); }
+    .metric-item.amber .metric-val { color: var(--amber); }
+
+    /* ─── Detections table ──────────────────────────────────────────────── */
+    .detections-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .det-table-scroll { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+    td {
+      padding: 11px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    .td-id {
+      color: var(--text-muted);
+      font-size: 11px;
+      width: 40px;
+    }
+
+    .td-label {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+
+    .score-bar-bg {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border-hi);
+      overflow: hidden;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .score-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      width: 42px;
+      text-align: right;
+    }
+
+    .coord-cell {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ─── Badge ─────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Error / toast ─────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--red);
+      max-width: 380px;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    .toast.visible { display: block; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* ─── Divider ───────────────────────────────────────────────────────── */
+    hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ─── Responsive ────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ─── Animations ────────────────────────────────────────────────────── */
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ─── Scrollbar ─────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+    /* ─── Theme switcher ────────────────────────────────────────────────── */
+    .theme-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .theme-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s, border-color 0.2s;
+      flex-shrink: 0;
+      outline: none;
+      padding: 0;
+    }
+
+    .theme-btn:hover { transform: scale(1.18); }
+    .theme-btn.active { border-color: var(--text); transform: scale(1.1); box-shadow: 0 0 10px var(--accent); }
+
+    .theme-btn::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+    }
+
+    .theme-btn[data-t="azure"]  { background: #0a0d12; }
+    .theme-btn[data-t="azure"]::after  { background: #0078d4; }
+    .theme-btn[data-t="matrix"] { background: #020b02; }
+    .theme-btn[data-t="matrix"]::after { background: #00c800; }
+    .theme-btn[data-t="violet"] { background: #0b0812; }
+    .theme-btn[data-t="violet"]::after { background: #7c3aed; }
+    .theme-btn[data-t="amber"]  { background: #0f0a02; }
+    .theme-btn[data-t="amber"]::after  { background: #f59e0b; }
+    .theme-btn[data-t="light"]  { background: #e8edf8; border-color: #b8c5e0; }
+    .theme-btn[data-t="light"]::after  { background: #0055b3; }
+
+    /* Light theme overrides */
+    [data-theme="light"] .logo-mark  { box-shadow: 0 0 16px rgba(0,85,179,0.2); }
+    [data-theme="light"] .btn-run    { box-shadow: none; }
+    [data-theme="light"] .btn-run:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(0,85,179,0.25); }
+    [data-theme="light"] .spinner    { border-color: var(--border-hi); border-top-color: var(--accent); }
+    [data-theme="light"] thead th    { background: var(--surface-2); }
+    [data-theme="light"] body::before { opacity: 0.55; }
+    [data-theme="light"] .drop-zone  { background: var(--surface-2); }
+    [data-theme="light"] .drop-zone-image { background: var(--surface-2); }
+
+    /* ─── Zoom controls ─────────────────────────────────────────────────── */
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .zoom-btn {
+      width: 26px; height: 26px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      display: grid; place-items: center;
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .zoom-btn:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent-hi);
+    }
+    .zoom-level {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      min-width: 36px;
+      text-align: center;
+      letter-spacing: 0.04em;
+    }
+
+    /* Make display area scrollable when zoomed */
+    .image-display-area {
+      overflow: auto;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+    .zoom-wrapper {
+      transform-origin: top left;
+      transition: transform .15s ease;
+      display: inline-block;
+      line-height: 0;
+    }
+    /* Allow images to exceed container width when zoomed */
+    .zoom-wrapper .result-img { max-width: none; }
+  </style>
+</head>
+<body>
+<div class="app-wrap">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header>
+    <div class="header-left">
+      <div class="logo-mark">OD</div>
+      <div>
+        <div class="header-title">ONNX Object Detection</div>
+        <div class="header-sub">Edge Inference &nbsp;·&nbsp; Azure AutoML for Images</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="theme-switcher">
+        <span class="theme-label">Theme</span>
+        <button class="theme-btn active" data-t="azure"  title="Azure Dark"></button>
+        <button class="theme-btn"        data-t="matrix" title="Matrix"></button>
+        <button class="theme-btn"        data-t="violet" title="Violet"></button>
+        <button class="theme-btn"        data-t="amber"  title="Amber"></button>
+        <button class="theme-btn"        data-t="light"  title="Light"></button>
+      </div>
+      <span class="header-badge">ONNX Runtime</span>
+    </div>
+  </header>
+
+  <!-- ── Main grid ──────────────────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- ── LEFT: Controls ───────────────────────────────────────────────── -->
+    <aside>
+      <div class="panel">
+        <div class="panel-header">
+          <svg class="panel-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="panel-title">Model Configuration</span>
+        </div>
+        <div class="panel-body">
+
+          <!-- ONNX Model -->
+          <div class="field-group">
+            <div class="field-label"><span></span>ONNX Model</div>
+            <label class="drop-zone" id="dz-onnx">
+              <input type="file" id="input-onnx" accept=".onnx" />
+              <div class="drop-inner">
+                <div class="drop-icon">🤖</div>
+                <div class="drop-text">
+                  <div class="drop-text-main" id="onnx-name">Drop or browse model.onnx</div>
+                  <div class="drop-text-hint">ONNX Runtime · float32 · NCHW</div>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Labels -->
+          <div class="field-group">
+            <div class="field-label"><span></span>Labels File</div>
+            <label class="drop-zone" id="dz-labels">
+              <input type="file" id="input-labels" accept=".json" />
+              <div class="drop-inner">
+                <div class="drop-icon">🏷️</div>
+                <div class="drop-text">
+                  <div class="drop-text-main" id="labels-name">Drop or browse labels.json</div>
+                  <div class="drop-text-hint">JSON array of class names</div>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Image -->
+          <div class="field-group">
+            <div class="field-label"><span></span>Input Image</div>
+            <label class="drop-zone-image" id="dz-image">
+              <input type="file" id="input-image" accept="image/*" />
+              <div class="drop-image-placeholder" id="img-placeholder">
+                <div class="big-icon">🖼️</div>
+                <div class="hint">Drop or browse an image</div>
+                <div class="formats">JPG · PNG · BMP · TIFF · GIF</div>
+              </div>
+              <img class="drop-image-preview" id="img-preview" alt="Preview" />
+            </label>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Thresholds -->
+          <div class="field-group">
+            <div class="field-label"><span></span>Inference Parameters</div>
+
+            <div class="slider-row">
+              <span class="slider-label">Conf. threshold</span>
+              <input type="range" id="slider-conf" min="0" max="1" step="0.01" value="0.5" />
+              <span class="slider-val" id="val-conf">0.50</span>
+            </div>
+
+            <div class="slider-row">
+              <span class="slider-label">IoU threshold</span>
+              <input type="range" id="slider-iou" min="0" max="1" step="0.01" value="0.45" />
+              <span class="slider-val" id="val-iou">0.45</span>
+            </div>
+          </div>
+
+          <!-- Run -->
+          <button class="btn-run" id="btn-run" disabled>
+            <div class="btn-shimmer"></div>
+            <span class="btn-run-text" id="btn-text">▶ &nbsp;Run Inference</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT: Results ────────────────────────────────────────────────── -->
+    <div class="results-panel" id="results-panel">
+
+      <!-- Image display -->
+      <div class="image-wrap">
+        <div class="image-tabs">
+          <button class="image-tab active" data-tab="annotated">Annotated Result</button>
+          <button class="image-tab" data-tab="original">Original Image</button>
+          <div class="zoom-controls">
+            <button class="zoom-btn" id="zoom-reset" title="Reset zoom">⊙</button>
+            <button class="zoom-btn" id="zoom-out"   title="Zoom out">−</button>
+            <span class="zoom-level" id="zoom-label">100%</span>
+            <button class="zoom-btn" id="zoom-in"    title="Zoom in">+</button>
+          </div>
+        </div>
+        <div class="image-display-area" id="display-area">
+          <div class="result-placeholder" id="placeholder-state">
+            <div class="ph-icon">🔭</div>
+            <p>Upload your model, labels and image,<br>then click Run Inference.</p>
+          </div>
+          <div class="processing-overlay" id="processing-state">
+            <div class="spinner"></div>
+            <div class="processing-text" id="processing-text">Loading ONNX session…</div>
+          </div>
+          <div class="zoom-wrapper" id="zoom-wrapper">
+            <img class="result-img active" id="img-annotated" alt="Annotated detection result" style="display:none" />
+            <img class="result-img" id="img-original" alt="Original image" style="display:none" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-bar fade-in" id="metrics-bar" style="display:none">
+        <div class="metric-item green">
+          <div class="metric-val" id="m-detections">—</div>
+          <div class="metric-label">Detections</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val" id="m-above">—</div>
+          <div class="metric-label">Above Threshold</div>
+        </div>
+        <div class="metric-item amber">
+          <div class="metric-val" id="m-infer">—</div>
+          <div class="metric-label">Inference Time</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val" id="m-total">—</div>
+          <div class="metric-label">Total Time</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val" id="m-imgsize">—</div>
+          <div class="metric-label">Image Size</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-val" id="m-model">—</div>
+          <div class="metric-label">Model Input</div>
+        </div>
+      </div>
+
+      <!-- Detections table -->
+      <div class="detections-wrap fade-in" id="det-wrap" style="display:none">
+        <div class="panel-header">
+          <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/>
+          </svg>
+          <span class="panel-title">Detection Results</span>
+        </div>
+        <div class="det-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Label</th>
+                <th>Confidence</th>
+                <th>Top-Left (x, y)</th>
+                <th>Bottom-Right (x, y)</th>
+                <th>Width × Height</th>
+              </tr>
+            </thead>
+            <tbody id="det-tbody">
+              <tr><td colspan="6" class="empty-state">No detections yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /results-panel -->
+  </div><!-- /main-grid -->
+</div><!-- /app-wrap -->
+
+<!-- Toast error -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Colour palette (mirrors Python backend) ────────────────────────────
+  const PALETTE = [
+    '#00c864', '#1a9bff', '#ff5050', '#ffc107',
+    '#b450ff', '#ff8c00', '#00e5e5', '#ff64b4',
+  ];
+
+  function colorFor(idx) { return PALETTE[idx % PALETTE.length]; }
+
+  // ── Zoom ───────────────────────────────────────────────────────────────
+  (function () {
+    const STEP = 0.2, MIN = 0.2, MAX = 5.0;
+    let level = 1.0;
+    const wrapper = document.getElementById('zoom-wrapper');
+    const label   = document.getElementById('zoom-label');
+
+    function apply() {
+      wrapper.style.transform = 'scale(' + level + ')';
+      label.textContent = Math.round(level * 100) + '%';
+    }
+
+    document.getElementById('zoom-in').addEventListener('click', function () {
+      level = Math.min(MAX, +(level + STEP).toFixed(2));
+      apply();
+    });
+    document.getElementById('zoom-out').addEventListener('click', function () {
+      level = Math.max(MIN, +(level - STEP).toFixed(2));
+      apply();
+    });
+    document.getElementById('zoom-reset').addEventListener('click', function () {
+      level = 1.0;
+      apply();
+    });
+
+    // Exposed so inference callback can reset zoom on each new result
+    window.resetZoom = function () { level = 1.0; apply(); };
+  })();
+
+  // ── State ──────────────────────────────────────────────────────────────
+  let onnxFile = null, labelsFile = null, imageFile = null;
+
+  // ── Helpers ────────────────────────────────────────────────────────────
+  function showToast(msg, duration = 5000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), duration);
+  }
+
+  function checkReady() {
+    const ready = onnxFile && labelsFile && imageFile;
+    document.getElementById('btn-run').disabled = !ready;
+  }
+
+  // ── Drop zone wiring ───────────────────────────────────────────────────
+  function wireDropZone(dzId, inputId, nameId, onFile, typeLabel) {
+    const dz = document.getElementById(dzId);
+    const input = document.getElementById(inputId);
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) handleFile(input.files[0]);
+    });
+
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    function handleFile(file) {
+      const nameEl = document.getElementById(nameId);
+      nameEl.textContent = file.name;
+      dz.classList.add('has-file');
+      onFile(file);
+      checkReady();
+    }
+  }
+
+  wireDropZone('dz-onnx', 'input-onnx', 'onnx-name', f => { onnxFile = f; }, 'ONNX');
+  wireDropZone('dz-labels', 'input-labels', 'labels-name', f => { labelsFile = f; }, 'Labels');
+
+  // ── Image drop zone ────────────────────────────────────────────────────
+  (function () {
+    const dz = document.getElementById('dz-image');
+    const input = document.getElementById('input-image');
+    const preview = document.getElementById('img-preview');
+    const placeholder = document.getElementById('img-placeholder');
+
+    function handleFile(file) {
+      imageFile = file;
+      dz.classList.add('has-file');
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.classList.add('visible');
+        placeholder.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+      checkReady();
+    }
+
+    input.addEventListener('change', () => { if (input.files[0]) handleFile(input.files[0]); });
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--azure)'; });
+    dz.addEventListener('dragleave', () => { dz.style.borderColor = ''; });
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.style.borderColor = '';
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+  })();
+
+  // ── Sliders ────────────────────────────────────────────────────────────
+  document.getElementById('slider-conf').addEventListener('input', function () {
+    document.getElementById('val-conf').textContent = parseFloat(this.value).toFixed(2);
+  });
+  document.getElementById('slider-iou').addEventListener('input', function () {
+    document.getElementById('val-iou').textContent = parseFloat(this.value).toFixed(2);
+  });
+
+  // ── Tab switching ──────────────────────────────────────────────────────
+  document.querySelectorAll('.image-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.image-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const which = tab.dataset.tab;
+      document.getElementById('img-annotated').style.display = which === 'annotated' ? 'block' : 'none';
+      document.getElementById('img-original').style.display  = which === 'original'  ? 'block' : 'none';
+    });
+  });
+
+  // ── Run inference ──────────────────────────────────────────────────────
+  document.getElementById('btn-run').addEventListener('click', async () => {
+    if (!onnxFile || !labelsFile || !imageFile) return;
+
+    const btn = document.getElementById('btn-run');
+    const btnText = document.getElementById('btn-text');
+    const processingState = document.getElementById('processing-state');
+    const placeholderState = document.getElementById('placeholder-state');
+    const processingText = document.getElementById('processing-text');
+    const imgAnnotated = document.getElementById('img-annotated');
+    const imgOriginal = document.getElementById('img-original');
+
+    // UI → loading state
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btnText.textContent = '⏳  Running…';
+    placeholderState.style.display = 'none';
+    imgAnnotated.style.display = 'none';
+    imgOriginal.style.display = 'none';
+    processingState.classList.add('visible');
+
+    const steps = ['Loading ONNX session…', 'Preprocessing image…', 'Running inference…', 'Applying NMS…', 'Rendering annotations…'];
+    let stepIdx = 0;
+    processingText.textContent = steps[stepIdx];
+    const stepInterval = setInterval(() => {
+      stepIdx = (stepIdx + 1) % steps.length;
+      processingText.textContent = steps[stepIdx];
+    }, 700);
+
+    try {
+      const formData = new FormData();
+      formData.append('onnx_model', onnxFile);
+      formData.append('labels_file', labelsFile);
+      formData.append('image', imageFile);
+      formData.append('conf_threshold', document.getElementById('slider-conf').value);
+      formData.append('iou_threshold', document.getElementById('slider-iou').value);
+
+      const resp = await fetch('/infer', { method: 'POST', body: formData });
+      const data = await resp.json();
+
+      if (!resp.ok || data.error) {
+        throw new Error(data.error || 'Unknown server error');
+      }
+
+      clearInterval(stepInterval);
+      processingState.classList.remove('visible');
+
+      // Show images
+      imgAnnotated.src = 'data:image/png;base64,' + data.annotated_image;
+      imgOriginal.src  = 'data:image/png;base64,' + data.original_image;
+      imgAnnotated.style.display = 'block';
+
+      // Reset zoom on each new result
+      window.resetZoom && window.resetZoom();
+
+      // Activate annotated tab
+      document.querySelectorAll('.image-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="annotated"]').classList.add('active');
+
+      // Metrics
+      const m = data.meta;
+      const t = m.timing;
+      document.getElementById('m-detections').textContent = m.total_detections;
+      document.getElementById('m-above').textContent = m.above_threshold;
+      document.getElementById('m-infer').textContent = (t.inference_s * 1000).toFixed(0) + ' ms';
+      document.getElementById('m-total').textContent = (t.total_s * 1000).toFixed(0) + ' ms';
+      document.getElementById('m-imgsize').textContent = m.original_image_size.join('×');
+      document.getElementById('m-model').textContent = m.model_input_shape.slice(2).join('×');
+      document.getElementById('metrics-bar').style.display = 'grid';
+
+      // Detections table
+      renderTable(data.detections, parseFloat(document.getElementById('slider-conf').value));
+      document.getElementById('det-wrap').style.display = 'block';
+
+    } catch (err) {
+      clearInterval(stepInterval);
+      processingState.classList.remove('visible');
+      placeholderState.style.display = 'block';
+      showToast('⚠ ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btnText.textContent = '▶ \u00a0Run Inference';
+      checkReady();
+    }
+  });
+
+  // ── Render table ───────────────────────────────────────────────────────
+  function renderTable(detections, confThreshold) {
+    const tbody = document.getElementById('det-tbody');
+    if (!detections || detections.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No detections above threshold.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = detections.map(d => {
+      const color = colorFor(d.class_index || 0);
+      const scorePct = (d.score * 100).toFixed(1);
+      const barPct = (d.score * 100).toFixed(0);
+      const aboveThresh = d.score >= confThreshold;
+      const box = d.box;
+
+      const tl = `(${(box.topX * 100).toFixed(1)}%, ${(box.topY * 100).toFixed(1)}%)`;
+      const br = `(${(box.bottomX * 100).toFixed(1)}%, ${(box.bottomY * 100).toFixed(1)}%)`;
+      const bw = ((box.bottomX - box.topX) * 100).toFixed(1);
+      const bh = ((box.bottomY - box.topY) * 100).toFixed(1);
+      const size = `${bw}% × ${bh}%`;
+
+      return `
+        <tr style="${aboveThresh ? '' : 'opacity:0.45'}">
+          <td class="td-id">${d.id}</td>
+          <td class="td-label">
+            <span class="badge" style="background:${color}22; color:${color}; border:1px solid ${color}55">
+              ${d.label.toUpperCase()}
+            </span>
+          </td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg">
+                <div class="score-bar-fill" style="width:${barPct}%; background:${color}"></div>
+              </div>
+              <span class="score-text" style="color:${color}">${scorePct}%</span>
+            </div>
+          </td>
+          <td class="coord-cell">${tl}</td>
+          <td class="coord-cell">${br}</td>
+          <td class="coord-cell">${size}</td>
+        </tr>`;
+    }).join('');
+  }
+  // ── Theme switcher ─────────────────────────────────────────────────────
+  (function () {
+    const root = document.documentElement;
+    const btns = document.querySelectorAll('.theme-btn');
+    const STORAGE_KEY = 'onnx-ui-theme';
+
+    function applyTheme(name) {
+      root.setAttribute('data-theme', name);
+      btns.forEach(b => b.classList.toggle('active', b.dataset.t === name));
+      try { localStorage.setItem(STORAGE_KEY, name); } catch (_) {}
+    }
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => applyTheme(btn.dataset.t));
+    });
+
+    // Restore saved theme
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) applyTheme(saved);
+    } catch (_) {}
+  })();
+</script>
+</body>
+</html>
